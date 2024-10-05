@@ -1,160 +1,178 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
-const orbitScaleFactor = 10; // Adjust the orbit scaling factor
+const orbitScaleFactor = 50; // Adjusted for better spacing in scene
 
-// Calculates the orbit points considering semi-major axis and eccentricity
-const calculateOrbitPoints = (e, q, numPoints = 100) => {
-    const points = [];
-    const a = (q / (1 - e)) * orbitScaleFactor; // Semi-major axis
-    const b = a * Math.sqrt(1 - e * e); // Semi-minor axis
-    for (let i = 0; i <= numPoints; i++) {
-        const theta = (i / numPoints) * Math.PI * 2; // Angle in radians
-        const x = a * Math.cos(theta); // X coordinate
-        const y = b * Math.sin(theta); // Y coordinate
-        points.push(new THREE.Vector3(x, y, 0)); // Orbit points on a 2D plane
-    }
-    return points;
-};
-
-const getColor = (index) => {
-    const colors = [
-        0xff5733, 0x33ff57, 0x3357ff, 0xff33a1, 0xfff033, 0x33fff7, 0xf733ff
-    ];
-    return colors[index % colors.length];
+const loadTexture = (path) => {
+  return new THREE.TextureLoader().load(path);
 };
 
 const Orrery = () => {
-    const mountRef = useRef(null);
-    const [orbitalData, setOrbitalData] = useState([]);
-    const slider = 5; // button for slider
+  const mountRef = useRef(null);
+  const [orbitalData, setOrbitalData] = useState([]);
 
-    useEffect(() => {
-        fetch('/orbitalData.json')
-            .then(response => response.json())
-            .then(data => setOrbitalData(data.slice(0, slider + 8)))
-            //.then(data => setOrbitalData(data))
-            .catch(error => console.error('Error fetching data:', error));
-    }, []);
+  const slider = 5; // Number of planets to show 
 
-    useEffect(() => {
-        if (orbitalData.length === 0) return;
+  useEffect(() => {
+    fetch('/orbitalData.json')
+      .then((response) => response.json())
+      .then((data) => setOrbitalData(data.slice(0, slider + 8)))
+      //.then((data) => setOrbitalData(data))
+      .catch((error) => console.error('Error fetching data:', error));
+  }, []);
 
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        mountRef.current.appendChild(renderer.domElement);
+  useEffect(() => {
+    if (orbitalData.length === 0) return;
 
-        camera.position.set(0, 0, 200);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      10000
+    );
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    mountRef.current.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0x404040);
-        scene.add(ambientLight);
+    camera.position.set(0, -400, 100);
 
-        const pointLight = new THREE.PointLight(0xffffff, 1, 500);
-        pointLight.position.set(0, 0, 100);
-        scene.add(pointLight);
+    // Lighting setup
+    const sunLight = new THREE.PointLight(0xffffff, 3, 2000);
+    sunLight.position.set(0, 0, 0);
+    scene.add(sunLight);
 
-        // Sun
-        const sunGeometry = new THREE.SphereGeometry(2, 32, 32);
-        const sunMaterial = new THREE.MeshStandardMaterial({
-            color: 0xffff00,
-            emissive: 0xffff00,
-            emissiveIntensity: 1.5,
-        });
-        const sun = new THREE.Mesh(sunGeometry, sunMaterial);
-        scene.add(sun);
+    const ambientLight = new THREE.AmbientLight(0x404040); // softer global light
+    scene.add(ambientLight);
 
-        orbitalData.forEach((obj, index) => {
-            const { e, q_au_1, i_deg, longitudeOfAscendingNode, object_name, p_yr } = obj;
+    // Background: Starfield
+    const createStarfieldBackground = () => {
+      const starGeometry = new THREE.SphereGeometry(5000, 64, 64);
+      const starMaterial = new THREE.MeshBasicMaterial({
+        map: new THREE.TextureLoader().load('/textures/stars.jpg'),
+        side: THREE.BackSide, // Render inside of the sphere
+      });
+      const starfield = new THREE.Mesh(starGeometry, starMaterial);
+      return starfield;
+    };
 
-            // Orbit points calculation
-            const orbitPoints = calculateOrbitPoints(e, parseFloat(q_au_1));
-            const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
-            const orbitMaterial = new THREE.LineBasicMaterial({ color: 0x888888 });
-            const orbitLine = new THREE.Line(orbitGeometry, orbitMaterial);
-        
-            // Create a group for each orbit
-            const orbitGroup = new THREE.Group();
-            orbitGroup.add(orbitLine);
-        
-            // Apply the transformation in the correct order:
-            // 1. Rotate around the z-axis (longitude of ascending node)
-            // 2. Tilt the orbit around the x-axis (i_deg)
-        
-            // Rotation around z-axis (longitude of ascending node)
-            const ascendingNodeRad = THREE.MathUtils.degToRad(longitudeOfAscendingNode || 0);
-            orbitGroup.rotation.z = ascendingNodeRad;
-        
-            // Tilt around x-axis (i_deg)
-            const i_degRad = THREE.MathUtils.degToRad(i_deg || 0);
-            orbitGroup.rotation.x = i_degRad;
-        
-            scene.add(orbitGroup);
-        
-            // Planet creation and positioning
-            if (object_name.includes('planet_')){
-                var planetGeometry = new THREE.SphereGeometry(1.5, 32, 32);
-            }
-            else{
-                var planetGeometry = new THREE.SphereGeometry(0.5, 32, 32);
-            }
-            const planetMaterial = new THREE.MeshStandardMaterial({
-                color: getColor(index),
-                emissive: getColor(index),
-                emissiveIntensity: 0.5
-            });
-            const planet = new THREE.Mesh(planetGeometry, planetMaterial);
-            scene.add(planet);
-        
-            // Set the initial position of the planet on the orbit
-            planet.position.copy(orbitPoints[0]);
-        
-            let currentIndex = 0;
-            const relativeSpeed = 0.01; // Adjust the speed of the animation //need to make this 
-            const speed = ((2 * Math.PI) / Math.abs(parseFloat(p_yr))) * relativeSpeed; // Ensure it's always positive // Orbital speed of each object (planet or asteroid) 
-        
-            // Animation function to move the planet along the orbit
-            const animatePlanet = () => {
-                currentIndex = (currentIndex + speed) % orbitPoints.length; // Positive increment to keep moving in one direction
-                if (currentIndex < 0) currentIndex += orbitPoints.length; // Wrap around for negative // Ensure positive increment
-                planet.position.copy(orbitPoints[Math.floor(currentIndex)]);
-                
-                // Apply the orbit's transformations to the planet's position
-                planet.position.applyMatrix4(orbitGroup.matrixWorld);
-            };
+    const starfield = createStarfieldBackground();
+    scene.add(starfield);
 
-            // Set a reasonable interval for animation
-            setInterval(animatePlanet, 1000 / 60); // 60 FPS
-        });
+    // Sun with emissive material
+    const sunTexture = loadTexture('/textures/sun.jpg');
+    const sunGeometry = new THREE.SphereGeometry(25, 64, 64);
+    const sunMaterial = new THREE.MeshBasicMaterial({
+      map: sunTexture,
+      emissive: 0xffff00, // Glowing effect
+      emissiveIntensity: 2,
+    });
+    const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+    scene.add(sun);
+
+    // Create controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.25;
+    controls.enableZoom = true;
+    controls.minDistance = 100;  // Minimum zoom distance (how close you can zoom in)
+    controls.maxDistance = 2000; // Maximum zoom distance (how far you can zoom out)
 
 
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.25;
-        controls.enableZoom = true;
+    const planets = [];
 
-        const animate = () => {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
-        };
+    orbitalData.forEach((obj, index) => {
+      const { e, q_au_1, i_deg, longitudeOfAscendingNode, object_name, p_yr } = obj;
 
-        animate();
+      // Calculate orbit points
+      const a = (parseFloat(q_au_1) / (1 - e)) * orbitScaleFactor;
+      const b = a * Math.sqrt(1 - e * e);
+      const points = [];
+      for (let i = 0; i <= 100; i++) {
+        const theta = (i / 100) * Math.PI * 2;
+        const x = a * Math.cos(theta);
+        const y = b * Math.sin(theta);
+        points.push(new THREE.Vector3(x, y, 0));
+      }
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+      // Orbit Line
+      const orbitGeometry = new THREE.BufferGeometry().setFromPoints(points);
+      const orbitMaterial = new THREE.LineBasicMaterial({ color: 0x888888 });
+      const orbitLine = new THREE.Line(orbitGeometry, orbitMaterial);
 
-        return () => {
-            mountRef.current.removeChild(renderer.domElement);
-        };
-    }, [orbitalData]);
+      // Orbit Group
+      const orbitGroup = new THREE.Group();
+      orbitGroup.add(orbitLine);
+      orbitGroup.rotation.z = THREE.MathUtils.degToRad(longitudeOfAscendingNode || 0);
+      orbitGroup.rotation.x = THREE.MathUtils.degToRad(i_deg || 0);
+      scene.add(orbitGroup);
 
-    return <div ref={mountRef} />;
+      // Planet Setup
+      let texture;
+      if (object_name.includes('Earth')) texture = loadTexture('/textures/earth.jpg');
+      if (object_name.includes('Mars')) texture = loadTexture('/textures/mars.jpg');
+      if (object_name.includes('Jupiter')) texture = loadTexture('/textures/jupiter.jpg');
+      if (object_name.includes('Mercury')) texture = loadTexture('/textures/mercury.jpg');
+      if (object_name.includes('Venus')) texture = loadTexture('/textures/venus.jpg');
+      if (object_name.includes('Uranus')) texture = loadTexture('/textures/uranus.jpg');
+      if (object_name.includes('Neptune')) texture = loadTexture('/textures/neptune.jpg');
+      if (object_name.includes('Saturn')) texture = loadTexture('/textures/saturn.jpg');
+
+      const planetGeometry = new THREE.SphereGeometry(3, 32, 32);
+      const planetMaterial = new THREE.MeshStandardMaterial({
+        map: texture,
+        metalness: 0.1,
+        roughness: 1,
+      });
+      const planet = new THREE.Mesh(planetGeometry, planetMaterial);
+
+      scene.add(planet);
+
+      planets.push({
+        planet,
+        orbitGroup,
+        points,
+        speed: ((2 * Math.PI) / Math.abs(parseFloat(p_yr))) * 0.01,
+        currentIndex: 0,
+      });
+    });
+
+    const animate = () => {
+      requestAnimationFrame(animate);
+
+      planets.forEach((data) => {
+        const { planet, points, orbitGroup, speed } = data;
+        data.currentIndex = (data.currentIndex + speed) % points.length;
+        const point1 = points[Math.floor(data.currentIndex)];
+        const point2 = points[Math.ceil(data.currentIndex) % points.length];
+        const t = data.currentIndex % 1;
+
+        // Smooth position interpolation
+        const interpolatedPosition = new THREE.Vector3().lerpVectors(point1, point2, t);
+        planet.position.copy(interpolatedPosition);
+        planet.position.applyMatrix4(orbitGroup.matrixWorld); // Apply orbital transformations
+      });
+
+      controls.update();
+      renderer.render(scene, camera);
+    };
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    return () => {
+      mountRef.current.removeChild(renderer.domElement);
+    };
+  }, [orbitalData]);
+
+  return <div ref={mountRef} />;
 };
 
 export default Orrery;
