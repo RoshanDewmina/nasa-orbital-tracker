@@ -1,9 +1,8 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
-const orbitScaleFactor = 50; // Adjusted for better spacing in scene
+const orbitScaleFactor = 175; // Adjusted for better spacing in scene
 
 const loadTexture = (path) => {
   return new THREE.TextureLoader().load(path);
@@ -13,7 +12,19 @@ const Orrery = () => {
   const mountRef = useRef(null);
   const [orbitalData, setOrbitalData] = useState([]);
 
-  const slider = 5; // Number of planets to show 
+  const planetSizes = {
+    planet_Mercury: 0.38,
+    planet_Venus: 0.95,
+    planet_Earth: 1,
+    planet_Mars: 0.53,
+    planet_Jupiter: 11.21,
+    planet_Saturn: 9.45,
+    planet_Uranus: 4.01,
+    planet_Neptune: 3.88,
+    moon: 0.27, // Moon size relative to Earth
+  };
+
+  const slider = 5; // Number of planets to show
 
   useEffect(() => {
     fetch('/orbitalData.json')
@@ -44,14 +55,14 @@ const Orrery = () => {
     sunLight.position.set(0, 0, 0);
     scene.add(sunLight);
 
-    const ambientLight = new THREE.AmbientLight(0x404040); // softer global light
+    const ambientLight = new THREE.AmbientLight(0x404040, 10); // softer global light
     scene.add(ambientLight);
 
     // Background: Starfield
     const createStarfieldBackground = () => {
-      const starGeometry = new THREE.SphereGeometry(5000, 64, 64);
+      const starGeometry = new THREE.SphereGeometry(7500, 64, 64);
       const starMaterial = new THREE.MeshBasicMaterial({
-        map: new THREE.TextureLoader().load('/textures/stars.jpg'),
+        map: new THREE.TextureLoader().load('/textures/8k_stars.jpg'),
         side: THREE.BackSide, // Render inside of the sphere
       });
       const starfield = new THREE.Mesh(starGeometry, starMaterial);
@@ -63,7 +74,7 @@ const Orrery = () => {
 
     // Sun with emissive material
     const sunTexture = loadTexture('/textures/sun.jpg');
-    const sunGeometry = new THREE.SphereGeometry(25, 64, 64);
+    const sunGeometry = new THREE.SphereGeometry(50, 64, 64);
     const sunMaterial = new THREE.MeshBasicMaterial({
       map: sunTexture,
       emissive: 0xffff00, // Glowing effect
@@ -77,9 +88,8 @@ const Orrery = () => {
     controls.enableDamping = true;
     controls.dampingFactor = 0.25;
     controls.enableZoom = true;
-    controls.minDistance = 100;  // Minimum zoom distance (how close you can zoom in)
-    controls.maxDistance = 2000; // Maximum zoom distance (how far you can zoom out)
-
+    controls.minDistance = 75;  // Minimum zoom distance (how close you can zoom in)
+    controls.maxDistance = 2500; // Maximum zoom distance (how far you can zoom out)
 
     const planets = [];
 
@@ -120,7 +130,8 @@ const Orrery = () => {
       if (object_name.includes('Neptune')) texture = loadTexture('/textures/neptune.jpg');
       if (object_name.includes('Saturn')) texture = loadTexture('/textures/saturn.jpg');
 
-      const planetGeometry = new THREE.SphereGeometry(3, 32, 32);
+      const sizeFactor = planetSizes[object_name] || 1;
+      const planetGeometry = new THREE.SphereGeometry(5 * sizeFactor, 32, 32);
       const planetMaterial = new THREE.MeshStandardMaterial({
         map: texture,
         metalness: 0.1,
@@ -130,8 +141,23 @@ const Orrery = () => {
 
       scene.add(planet);
 
+      // Add Moon for Earth
+      let moon;
+      if (object_name.includes('Earth')) {
+        const moonTexture = loadTexture('/textures/moon.jpg');
+        const moonGeometry = new THREE.SphereGeometry(5 * planetSizes['moon'], 32, 32);
+        const moonMaterial = new THREE.MeshStandardMaterial({
+          map: moonTexture,
+          metalness: 0.1,
+          roughness: 1,
+        });
+        moon = new THREE.Mesh(moonGeometry, moonMaterial);
+        planet.add(moon);
+      }
+
       planets.push({
         planet,
+        moon,
         orbitGroup,
         points,
         speed: ((2 * Math.PI) / Math.abs(parseFloat(p_yr))) * 0.01,
@@ -143,7 +169,7 @@ const Orrery = () => {
       requestAnimationFrame(animate);
 
       planets.forEach((data) => {
-        const { planet, points, orbitGroup, speed } = data;
+        const { planet, points, orbitGroup, speed, moon } = data;
         data.currentIndex = (data.currentIndex + speed) % points.length;
         const point1 = points[Math.floor(data.currentIndex)];
         const point2 = points[Math.ceil(data.currentIndex) % points.length];
@@ -153,6 +179,17 @@ const Orrery = () => {
         const interpolatedPosition = new THREE.Vector3().lerpVectors(point1, point2, t);
         planet.position.copy(interpolatedPosition);
         planet.position.applyMatrix4(orbitGroup.matrixWorld); // Apply orbital transformations
+
+        // Moon orbit around Earth
+        if (moon) {
+          const moonOrbitRadius = 30; // Approximate distance between Earth and Moon
+          const moonSpeed = 0.5; // Speed of Moon orbiting Earth
+          moon.position.set(
+            Math.cos(data.currentIndex * moonSpeed) * moonOrbitRadius,
+            Math.sin(data.currentIndex * moonSpeed) * moonOrbitRadius,
+            0
+          );
+        }
       });
 
       controls.update();
