@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
@@ -24,13 +25,18 @@ const Orrery = () => {
     moon: 0.27, // Moon size relative to Earth
   };
 
+  const cometTextures = [
+    '/textures/comet1.jpg',
+    '/textures/comet2.jpg',
+    '/textures/comet3.jpg',
+    '/textures/comet4.jpg'
+  ]
   const slider = 5; // Number of planets to show
 
   useEffect(() => {
     fetch('/orbitalData.json')
       .then((response) => response.json())
       .then((data) => setOrbitalData(data.slice(0, slider + 8)))
-      //.then((data) => setOrbitalData(data))
       .catch((error) => console.error('Error fetching data:', error));
   }, []);
 
@@ -55,8 +61,16 @@ const Orrery = () => {
     sunLight.position.set(0, 0, 0);
     scene.add(sunLight);
 
-    const ambientLight = new THREE.AmbientLight(0x404040, 10); // softer global light
+    const ambientLight = new THREE.AmbientLight(0x404040, 1); // Softer global light
     scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(0, 0, 10).normalize();
+    scene.add(directionalLight);
+
+    
+    const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1); // Sky color, ground color
+    scene.add(hemisphereLight);
 
     // Background: Starfield
     const createStarfieldBackground = () => {
@@ -75,10 +89,12 @@ const Orrery = () => {
     // Sun with emissive material
     const sunTexture = loadTexture('/textures/sun.jpg');
     const sunGeometry = new THREE.SphereGeometry(50, 64, 64);
-    const sunMaterial = new THREE.MeshBasicMaterial({
-      map: sunTexture,
-      emissive: 0xffff00, // Glowing effect
-      emissiveIntensity: 2,
+    const sunMaterial = new THREE.MeshStandardMaterial({
+    map: sunTexture,
+    emissive: 0xffff00, // Glowing effect
+    emissiveIntensity: 0.01, // Reduced intensity for better texture visibility
+    transparent: true, // Allow for transparency if needed
+    depthWrite: false, // Prevent depth writing to avoid z-fighting
     });
     const sun = new THREE.Mesh(sunGeometry, sunMaterial);
     scene.add(sun);
@@ -100,8 +116,8 @@ const Orrery = () => {
       const a = (parseFloat(q_au_1) / (1 - e)) * orbitScaleFactor;
       const b = a * Math.sqrt(1 - e * e);
       const points = [];
-      for (let i = 0; i <= 100; i++) {
-        const theta = (i / 100) * Math.PI * 2;
+      for (let i = 0; i <= 1000; i++) {
+        const theta = (i / 1000) * Math.PI * 2;
         const x = a * Math.cos(theta);
         const y = b * Math.sin(theta);
         points.push(new THREE.Vector3(x, y, 0));
@@ -122,23 +138,27 @@ const Orrery = () => {
       // Planet Setup
       let texture;
       if (object_name.includes('Earth')) texture = loadTexture('/textures/earth.jpg');
-      if (object_name.includes('Mars')) texture = loadTexture('/textures/mars.jpg');
-      if (object_name.includes('Jupiter')) texture = loadTexture('/textures/jupiter.jpg');
-      if (object_name.includes('Mercury')) texture = loadTexture('/textures/mercury.jpg');
-      if (object_name.includes('Venus')) texture = loadTexture('/textures/venus.jpg');
-      if (object_name.includes('Uranus')) texture = loadTexture('/textures/uranus.jpg');
-      if (object_name.includes('Neptune')) texture = loadTexture('/textures/neptune.jpg');
-      if (object_name.includes('Saturn')) texture = loadTexture('/textures/saturn.jpg');
-
+      else if (object_name.includes('Mars')) texture = loadTexture('/textures/mars.jpg');
+      else if (object_name.includes('Jupiter')) texture = loadTexture('/textures/jupiter.jpg');
+      else if (object_name.includes('Mercury')) texture = loadTexture('/textures/mercury.jpg');
+      else if (object_name.includes('Venus')) texture = loadTexture('/textures/venus.jpg');
+      else if (object_name.includes('Uranus')) texture = loadTexture('/textures/uranus.jpg');
+      else if (object_name.includes('Neptune')) texture = loadTexture('/textures/neptune.jpg');
+      else if (object_name.includes('Saturn')) texture = loadTexture('/textures/saturn.jpg');
+      else {
+        const randomIndex = Math.floor(Math.random() * cometTextures.length);
+        texture = loadTexture(cometTextures[randomIndex]);
+      }
+    
       const sizeFactor = planetSizes[object_name] || 1;
       const planetGeometry = new THREE.SphereGeometry(5 * sizeFactor, 32, 32);
       const planetMaterial = new THREE.MeshStandardMaterial({
         map: texture,
-        metalness: 0.1,
-        roughness: 1,
+        metalness: 0.5, // Adjust for more reflectivity
+        roughness: 0.3, // Adjust for smoother surface
       });
+      
       const planet = new THREE.Mesh(planetGeometry, planetMaterial);
-
       scene.add(planet);
 
       // Add Moon for Earth
@@ -149,7 +169,7 @@ const Orrery = () => {
         const moonMaterial = new THREE.MeshStandardMaterial({
           map: moonTexture,
           metalness: 0.1,
-          roughness: 1,
+          roughness: 0.7, // Adjust for a more realistic surface
         });
         moon = new THREE.Mesh(moonGeometry, moonMaterial);
         planet.add(moon);
@@ -160,7 +180,7 @@ const Orrery = () => {
         moon,
         orbitGroup,
         points,
-        speed: ((2 * Math.PI) / Math.abs(parseFloat(p_yr))) * 0.01,
+        speed: ((2 * Math.PI) / Math.abs(parseFloat(p_yr))) * 0.05,
         currentIndex: 0,
       });
     });
@@ -183,7 +203,7 @@ const Orrery = () => {
         // Moon orbit around Earth
         if (moon) {
           const moonOrbitRadius = 30; // Approximate distance between Earth and Moon
-          const moonSpeed = 0.5; // Speed of Moon orbiting Earth
+          const moonSpeed = 0.25; // Speed of Moon orbiting Earth
           moon.position.set(
             Math.cos(data.currentIndex * moonSpeed) * moonOrbitRadius,
             Math.sin(data.currentIndex * moonSpeed) * moonOrbitRadius,
@@ -198,12 +218,6 @@ const Orrery = () => {
 
     animate();
 
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
     return () => {
       mountRef.current.removeChild(renderer.domElement);
     };
@@ -213,3 +227,6 @@ const Orrery = () => {
 };
 
 export default Orrery;
+
+
+
