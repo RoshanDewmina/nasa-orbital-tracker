@@ -2,17 +2,17 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
-const orbitScaleFactor = 10; // Adjust the orbit scaling factor
+const orbitScaleFactor = 5; // Adjust the orbit scaling factor
 
 // Calculates the orbit points considering semi-major axis and eccentricity
 const calculateOrbitPoints = (e, q, numPoints = 100) => {
     const points = [];
     const a = (q / (1 - e)) * orbitScaleFactor; // Semi-major axis
+    const b = a * Math.sqrt(1 - e * e); // Semi-minor axis
     for (let i = 0; i <= numPoints; i++) {
         const theta = (i / numPoints) * Math.PI * 2; // Angle in radians
-        const r = a * (1 - e * Math.cos(theta)); // Distance from the focus
-        const x = r * Math.cos(theta); // X coordinate
-        const y = r * Math.sin(theta); // Y coordinate
+        const x = a * Math.cos(theta); // X coordinate
+        const y = b * Math.sin(theta); // Y coordinate
         points.push(new THREE.Vector3(x, y, 0)); // Orbit points on a 2D plane
     }
     return points;
@@ -62,10 +62,10 @@ const Orrery = () => {
             emissiveIntensity: 1.5,
         });
         const sun = new THREE.Mesh(sunGeometry, sunMaterial);
-        scene.add(sun);
+        //scene.add(sun);
 
         orbitalData.forEach((obj, index) => {
-            const { e, q_au_1, inclination, longitudeOfAscendingNode, name } = obj;
+            const { e, q_au_1, i_deg, longitudeOfAscendingNode, name } = obj;
         
             // Orbit points calculation
             const orbitPoints = calculateOrbitPoints(e, parseFloat(q_au_1));
@@ -79,20 +79,20 @@ const Orrery = () => {
         
             // Apply the transformation in the correct order:
             // 1. Rotate around the z-axis (longitude of ascending node)
-            // 2. Tilt the orbit around the x-axis (inclination)
+            // 2. Tilt the orbit around the x-axis (i_deg)
         
             // Rotation around z-axis (longitude of ascending node)
             const ascendingNodeRad = THREE.MathUtils.degToRad(longitudeOfAscendingNode || 0);
             orbitGroup.rotation.z = ascendingNodeRad;
         
-            // Tilt around x-axis (inclination)
-            const inclinationRad = THREE.MathUtils.degToRad(inclination || 0);
-            orbitGroup.rotation.x = inclinationRad;
+            // Tilt around x-axis (i_deg)
+            const i_degRad = THREE.MathUtils.degToRad(i_deg || 0);
+            orbitGroup.rotation.x = i_degRad;
         
             scene.add(orbitGroup);
         
             // Planet creation and positioning
-            const planetGeometry = new THREE.SphereGeometry(4, 32, 32);
+            const planetGeometry = new THREE.SphereGeometry(1, 32, 32);
             const planetMaterial = new THREE.MeshStandardMaterial({
                 color: getColor(index),
                 emissive: getColor(index),
@@ -118,8 +118,6 @@ const Orrery = () => {
         
             setInterval(animatePlanet, 100);
         });
-        
-        
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
