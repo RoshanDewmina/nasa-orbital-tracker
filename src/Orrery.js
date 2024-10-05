@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
-const orbitScaleFactor = 5; // Adjust the orbit scaling factor
+const orbitScaleFactor = 10; // Adjust the orbit scaling factor
 
 // Calculates the orbit points considering semi-major axis and eccentricity
 const calculateOrbitPoints = (e, q, numPoints = 100) => {
@@ -28,11 +28,13 @@ const getColor = (index) => {
 const Orrery = () => {
     const mountRef = useRef(null);
     const [orbitalData, setOrbitalData] = useState([]);
+    const slider = 5; // button for slider
 
     useEffect(() => {
         fetch('/orbitalData.json')
             .then(response => response.json())
-            .then(data => setOrbitalData(data))
+            .then(data => setOrbitalData(data.slice(0, slider + 8)))
+            //.then(data => setOrbitalData(data))
             .catch(error => console.error('Error fetching data:', error));
     }, []);
 
@@ -55,18 +57,18 @@ const Orrery = () => {
         scene.add(pointLight);
 
         // Sun
-        const sunGeometry = new THREE.SphereGeometry(10, 32, 32);
+        const sunGeometry = new THREE.SphereGeometry(2, 32, 32);
         const sunMaterial = new THREE.MeshStandardMaterial({
             color: 0xffff00,
             emissive: 0xffff00,
             emissiveIntensity: 1.5,
         });
         const sun = new THREE.Mesh(sunGeometry, sunMaterial);
-        //scene.add(sun);
+        scene.add(sun);
 
         orbitalData.forEach((obj, index) => {
-            const { e, q_au_1, i_deg, longitudeOfAscendingNode, name } = obj;
-        
+            const { e, q_au_1, i_deg, longitudeOfAscendingNode, object_name, p_yr } = obj;
+
             // Orbit points calculation
             const orbitPoints = calculateOrbitPoints(e, parseFloat(q_au_1));
             const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
@@ -92,7 +94,12 @@ const Orrery = () => {
             scene.add(orbitGroup);
         
             // Planet creation and positioning
-            const planetGeometry = new THREE.SphereGeometry(1, 32, 32);
+            if (object_name.includes('planet_')){
+                var planetGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+            }
+            else{
+                var planetGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+            }
             const planetMaterial = new THREE.MeshStandardMaterial({
                 color: getColor(index),
                 emissive: getColor(index),
@@ -105,19 +112,23 @@ const Orrery = () => {
             planet.position.copy(orbitPoints[0]);
         
             let currentIndex = 0;
-            const speed = 0.02; // Animation speed
+            const relativeSpeed = 0.01; // Adjust the speed of the animation //need to make this 
+            const speed = ((2 * Math.PI) / Math.abs(parseFloat(p_yr))) * relativeSpeed; // Ensure it's always positive // Orbital speed of each object (planet or asteroid) 
         
             // Animation function to move the planet along the orbit
             const animatePlanet = () => {
-                currentIndex = (currentIndex + speed) % orbitPoints.length;
+                currentIndex = (currentIndex + speed) % orbitPoints.length; // Positive increment to keep moving in one direction
+                if (currentIndex < 0) currentIndex += orbitPoints.length; // Wrap around for negative // Ensure positive increment
                 planet.position.copy(orbitPoints[Math.floor(currentIndex)]);
-        
+                
                 // Apply the orbit's transformations to the planet's position
                 planet.position.applyMatrix4(orbitGroup.matrixWorld);
             };
-        
-            setInterval(animatePlanet, 100);
+
+            // Set a reasonable interval for animation
+            setInterval(animatePlanet, 1000 / 60); // 60 FPS
         });
+
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
