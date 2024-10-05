@@ -22,7 +22,7 @@ const Orrery = () => {
     planet_Saturn: 9.45,
     planet_Uranus: 4.01,
     planet_Neptune: 3.88,
-    moon: 0.27, // Moon size relative to Earth
+    moon: 0.27, // Moon size relative to EarthM
   };
 
   const cometTextures = [
@@ -104,7 +104,7 @@ const Orrery = () => {
     controls.enableDamping = true;
     controls.dampingFactor = 0.25;
     controls.enableZoom = true;
-    controls.minDistance = 75;  // Minimum zoom distance (how close you can zoom in)
+    controls.minDistance = 25;  // Minimum zoom distance (how close you can zoom in) 75
     controls.maxDistance = 2500; // Maximum zoom distance (how far you can zoom out)
 
     const planets = [];
@@ -174,6 +174,43 @@ const Orrery = () => {
         moon = new THREE.Mesh(moonGeometry, moonMaterial);
         planet.add(moon);
       }
+
+// Add Saturn's Rings
+if (object_name.includes('planet_Saturn')) {
+  const ringInnerRadius = 100; // Inner radius of the ring
+  const ringOuterRadius = 150; // Outer radius of the ring
+  const segmentCount = 64; // Number of segments in the ring
+
+  const ringMaterial = new THREE.MeshStandardMaterial({
+      map: loadTexture('/textures/saturn-rings.png'),
+      side: THREE.DoubleSide,
+      transparent: true, // Allow for transparency if needed
+  });
+
+  // Create a group to hold the ring segments
+  const saturnRingsGroup = new THREE.Group();
+
+  for (let i = 0; i < segmentCount; i++) {
+      const ringGeometry = new THREE.RingGeometry(ringInnerRadius, ringOuterRadius, 32);
+
+      // Modify UV mapping for the ring geometry
+      const uvs = ringGeometry.attributes.uv.array;
+      for (let j = 0; j < uvs.length; j += 2) {
+          uvs[j] = (i / segmentCount); // Adjust U based on segment
+          uvs[j + 1] = uvs[j + 1]; // Keep V as is
+      }
+      ringGeometry.attributes.uv.needsUpdate = true; // Notify Three.js to update the UVs
+
+      const saturnRingSegment = new THREE.Mesh(ringGeometry, ringMaterial);
+      saturnRingSegment.rotation.z = Math.PI / 2; // Rotate the ring to lie in the XZ plane
+
+      // Position each segment in a circular formation
+      saturnRingSegment.rotation.z = (i * (Math.PI * 2) / segmentCount); // Position each segment
+      saturnRingsGroup.add(saturnRingSegment); // Add to group
+  }
+
+  planet.add(saturnRingsGroup); // Attach the entire group to Saturn
+}
 
       planets.push({
         planet,
