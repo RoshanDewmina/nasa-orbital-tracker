@@ -185,41 +185,24 @@ const Orrery = () => {
                 planet.add(moon);
             }
 
-            // Add Saturn's Rings
             if (object_name.includes('planet_Saturn')) {
-                const ringInnerRadius = 100; // Inner radius of the ring
-                const ringOuterRadius = 150; // Outer radius of the ring
-                const segmentCount = 500; // Number of segments in the ring
-
+                const ringRadius = 100; // Radius of the torus
+                const tubeRadius = 35; // Thickness of the torus
+            
+                // Create the torus geometry
+                const ringGeometry = new THREE.TorusGeometry(ringRadius, tubeRadius, 2, 50000);
+                
                 const ringMaterial = new THREE.MeshStandardMaterial({
                     map: loadTexture('/textures/saturn-rings.png'),
                     side: THREE.DoubleSide,
                     transparent: true, // Allow for transparency if needed
                 });
-
-                // Create a group to hold the ring segments
-                const saturnRingsGroup = new THREE.Group();
-
-                const ringGeometry = new THREE.RingGeometry(ringInnerRadius, ringOuterRadius, segmentCount);
-                const pos = ringGeometry.attributes.position;
-                const uvs = ringGeometry.attributes.uv;
-
-                // Recalculate UVs to stretch the texture across the full range
-                for (let i = 0; i < pos.count; i++) {
-                    const angle = Math.atan2(pos.getY(i), pos.getX(i)); // Get angle from X, Y
-                    const u = (angle + Math.PI) / (2 * Math.PI); // Map angle to [0, 1]
-                    const v = 1; // Use a fixed value for V
-                    uvs.setXY(i, u, v);
-                }
-                uvs.needsUpdate = true; // Mark UVs as needing an update
-
-
-                const saturnRingSegment = new THREE.Mesh(ringGeometry, ringMaterial);
-                saturnRingSegment.rotation.z = Math.PI / 2; // Rotate the ring to lie in the XZ plane
-                saturnRingsGroup.add(saturnRingSegment); // Add to group
-
-                planet.add(saturnRingsGroup); // Attach the entire group to Saturn
+            
+                const saturnRings = new THREE.Mesh(ringGeometry, ringMaterial);
+                saturnRings.rotation.x = Math.PI; // Rotate the ring to lie in the XZ plane
+                planet.add(saturnRings); // Attach the torus to Saturn
             }
+            
 
             planets.push({
                 planet,
@@ -273,6 +256,5 @@ const Orrery = () => {
 };
 
 export default Orrery;
-
 
 
