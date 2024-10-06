@@ -117,7 +117,7 @@ const Orrery = () => {
         const planets = [];
 
         orbitalData.forEach((obj, index) => {
-            const { e, q_au_1, i_deg, longitudeOfAscendingNode, object_name, p_yr, axial_tilt } = obj;
+            const { e, q_au_1, i_deg, longitudeOfAscendingNode, object_name, p_yr, rotation_period } = obj;
 
             // Calculate orbit points
             const a = (parseFloat(q_au_1) / (1 - e)) * orbitScaleFactor;
@@ -166,9 +166,6 @@ const Orrery = () => {
 
             const planet = new THREE.Mesh(planetGeometry, planetMaterial);
 
-            // Adjust the rotation based on axial tilt
-            const tiltInRadians = THREE.MathUtils.degToRad(axial_tilt || 0); // Convert degrees to radians
-            planet.rotation.x = tiltInRadians; // Tilt the planet according to its axial tilt
             scene.add(planet);
 
             // Add Moon for Earth
@@ -185,6 +182,7 @@ const Orrery = () => {
                 planet.add(moon);
             }
 
+            let saturnRings;
             if (object_name.includes('planet_Saturn')) {
                 const ringRadius = 100; // Radius of the torus
                 const tubeRadius = 35; // Thickness of the torus
@@ -198,19 +196,24 @@ const Orrery = () => {
                     transparent: true, // Allow for transparency if needed
                 });
             
-                const saturnRings = new THREE.Mesh(ringGeometry, ringMaterial);
-                saturnRings.rotation.x = Math.PI; // Rotate the ring to lie in the XZ plane
+                saturnRings = new THREE.Mesh(ringGeometry, ringMaterial);
+                saturnRings.rotation.x = Math.PI / 1.7; // Rotate the ring to lie in the XZ plane
                 planet.add(saturnRings); // Attach the torus to Saturn
             }
             
+            const rotationSpeed = (2 * Math.PI) / (rotation_period * 60);
 
             planets.push({
                 planet,
                 moon,
+                saturnRings,
                 orbitGroup,
                 points,
                 speed: ((2 * Math.PI) / Math.abs(parseFloat(p_yr))) * 0.05,
+                // speed: 0,
                 currentIndex: 0,
+                object_name,
+                rotationSpeed,
             });
         });
 
@@ -218,7 +221,7 @@ const Orrery = () => {
             requestAnimationFrame(animate);
 
             planets.forEach((data) => {
-                const { planet, points, orbitGroup, speed, moon } = data;
+                const { planet, points, orbitGroup, speed, moon, saturnRings, object_name, rotationSpeed } = data;
                 data.currentIndex = (data.currentIndex + speed) % points.length;
                 const point1 = points[Math.floor(data.currentIndex)];
                 const point2 = points[Math.ceil(data.currentIndex) % points.length];
@@ -227,7 +230,14 @@ const Orrery = () => {
                 // Smooth position interpolation
                 const interpolatedPosition = new THREE.Vector3().lerpVectors(point1, point2, t);
                 planet.position.copy(interpolatedPosition);
-                planet.position.applyMatrix4(orbitGroup.matrixWorld); // Apply orbital transformations
+                planet.position.applyMatrix4(orbitGroup.matrixWorld); // Apply orbital transformations  
+                    
+                planet.rotation.x = 190;
+
+                if (object_name.includes('planet_Saturn')) {
+                    planet.rotation.y = 0;
+                }
+                planet.rotation.y += 0.01; // Rotate the planet
 
                 // Moon orbit around Earth
                 if (moon) {
@@ -256,5 +266,3 @@ const Orrery = () => {
 };
 
 export default Orrery;
-
-
