@@ -15,6 +15,7 @@
     "a2_au_d_2": "-0.000000000006",
     "ref": "1",
     "object_name": "planet_Mercury",
+    "rotation_period": "1407.6",
     "axial_tilt": 0.034
 },
 {
@@ -33,6 +34,7 @@
     "a2_au_d_2": "-0.000000000001",
     "ref": "1",
     "object_name": "planet_Venus",
+    "rotation_period": "-5832.5",
     "axial_tilt": 177.4
 },
 {
@@ -51,6 +53,7 @@
     "a2_au_d_2": "-0.000000000001",
     "ref": "1",
     "object_name": "planet_Earth",
+    "rotation_period": "24.0",
     "axial_tilt": 23.5
 },
 {
@@ -69,6 +72,7 @@
     "a2_au_d_2": "-0.000000000002",
     "ref": "1",
     "object_name": "planet_Mars",
+    "rotation_period": "24.6",
     "axial_tilt": 25.2
 },
 {
@@ -87,6 +91,7 @@
     "a2_au_d_2": "-0.000000000002",
     "ref": "1",
     "object_name": "planet_Jupiter",
+    "rotation_period": "9.9",
     "axial_tilt": 3.1
 },
 {
@@ -105,6 +110,7 @@
     "a2_au_d_2": "-0.000000000002",
     "ref": "1",
     "object_name": "planet_Saturn",
+    "rotation_period": "10.7",
     "axial_tilt": 26.7
 },
 {
@@ -123,6 +129,7 @@
     "a2_au_d_2": "-0.000000000001",
     "ref": "1",
     "object_name": "planet_Uranus",
+    "rotation_period": "-17.2",
     "axial_tilt": 97.8
 },
 {
@@ -141,6 +148,7 @@
     "a2_au_d_2": "-0.000000000001",
     "ref": "1",
     "object_name": "planet_Neptune",
+    "rotation_period": "16.1",
     "axial_tilt": 28.3
 },
   {
