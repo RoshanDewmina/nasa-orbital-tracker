@@ -1,0 +1,38 @@
+.header {
+    background-color: #282c34;
+    padding: 20px; /* Maintain padding for spacing */
+    text-align: center;
+    transition: max-height 0.3s ease, padding 0.3s ease; /* Smooth transition */
+    overflow: hidden; /* Ensures hidden content doesn't display */
+}
+
+.hidden {
+    max-height: 0;
+    padding: 0; /* Remove padding when hidden */
+}
+
+.visible {
+    max-height: 150px; /* Increased height to accommodate the title */
+}
+
+h1 {
+    margin: 0; /* Remove default margin */
+    padding: 0; /* Remove padding to align text at the top */
+}
+
+.toggle-button {
+    margin-top: 10px; /* Space between title and button */
+    padding: 5px; /* Smaller button */
+    background-color: transparent; /* Transparent background */
+    border: none;
+    cursor: pointer;
+    font-size: 20px; /* Increase font size for visibility */
+    color: white; /* Button text color */
+    display: block; /* Ensure the button is on a new line */
+    margin-left: auto; /* Center button */
+    margin-right: auto; /* Center button */
+}
+
+.toggle-button:hover {
+    color: #61dafb; /* Change color on hover */
+}

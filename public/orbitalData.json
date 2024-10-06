@@ -14,7 +14,8 @@
     "a1_au_d_2": "0.000000000002",
     "a2_au_d_2": "-0.000000000006",
     "ref": "1",
-    "object_name": "planet_Mercury"
+    "object_name": "planet_Mercury",
+    "axial_tilt": 0.034
 },
 {
     "object": "Venus",
@@ -31,7 +32,8 @@
     "a1_au_d_2": "0.000000000003",
     "a2_au_d_2": "-0.000000000001",
     "ref": "1",
-    "object_name": "planet_Venus"
+    "object_name": "planet_Venus",
+    "axial_tilt": 177.4
 },
 {
     "object": "Earth",
@@ -48,7 +50,8 @@
     "a1_au_d_2": "0.000000000002",
     "a2_au_d_2": "-0.000000000001",
     "ref": "1",
-    "object_name": "planet_Earth"
+    "object_name": "planet_Earth",
+    "axial_tilt": 23.5
 },
 {
     "object": "Mars",
@@ -65,7 +68,8 @@
     "a1_au_d_2": "0.000000000002",
     "a2_au_d_2": "-0.000000000002",
     "ref": "1",
-    "object_name": "planet_Mars"
+    "object_name": "planet_Mars",
+    "axial_tilt": 25.2
 },
 {
     "object": "Jupiter",
@@ -82,7 +86,8 @@
     "a1_au_d_2": "0.000000000002",
     "a2_au_d_2": "-0.000000000002",
     "ref": "1",
-    "object_name": "planet_Jupiter"
+    "object_name": "planet_Jupiter",
+    "axial_tilt": 3.1
 },
 {
     "object": "Saturn",
@@ -99,7 +104,8 @@
     "a1_au_d_2": "0.000000000003",
     "a2_au_d_2": "-0.000000000002",
     "ref": "1",
-    "object_name": "planet_Saturn"
+    "object_name": "planet_Saturn",
+    "axial_tilt": 26.7
 },
 {
     "object": "Uranus",
@@ -116,7 +122,8 @@
     "a1_au_d_2": "0.000000000003",
     "a2_au_d_2": "-0.000000000001",
     "ref": "1",
-    "object_name": "planet_Uranus"
+    "object_name": "planet_Uranus",
+    "axial_tilt": 97.8
 },
 {
     "object": "Neptune",
@@ -133,7 +140,8 @@
     "a1_au_d_2": "0.000000000002",
     "a2_au_d_2": "-0.000000000001",
     "ref": "1",
-    "object_name": "planet_Neptune"
+    "object_name": "planet_Neptune",
+    "axial_tilt": 28.3
 },
   {
     "object": "P/2004 R1 (McNaught)",
